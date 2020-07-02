@@ -87,11 +87,8 @@ public class ViewRegisteredDubboOnZk {
 
     public static void main(String[] a) throws InterruptedException {
         ViewRegisteredDubboOnZk zk = new ViewRegisteredDubboOnZk();
-        zk.init("mt-zookeeper-vip:2181",
-                "dubbo",
-                "tf56.payOnlineFacade.facade.PaymentApplyFacadeService",
-                "payOnline",
-                "1.0.0");
+
+        zk.init("","","","","");
         try {
             System.out.println((j.join("parseIpList", JSON.json(zk.getIpList()))));
         } catch (IOException e) {
