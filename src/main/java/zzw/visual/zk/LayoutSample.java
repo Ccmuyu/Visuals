@@ -1,4 +1,4 @@
-package zk.zk;
+package zzw.visual.zk;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
@@ -21,7 +21,6 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 
-
 public class LayoutSample extends Application {
 
 
@@ -36,11 +35,14 @@ public class LayoutSample extends Application {
     public void start(Stage stage) {
         BorderPane border = new BorderPane();
 
+        //上
         HBox hbox = addHBox();
         border.setTop(hbox);
-        border.setLeft(addVBox());
-
+        //?
         addStackPane(hbox);
+
+        //左
+        border.setLeft(addVBox());
 
 // To see only the grid in the center, uncomment the following statement
 // comment out the setCenter() call farther down
@@ -54,7 +56,7 @@ public class LayoutSample extends Application {
 // To see only the grid in the center, comment out the following statement
 // If both setCenter() calls are executed, the anchor pane from the second
 // call replaces the grid from the first call
-        border.setCenter(addAnchorPane(addGridPane()));
+        border.setCenter(addAnchorPane());
 
         Scene scene = new Scene(border);
         stage.setScene(scene);
@@ -97,11 +99,12 @@ public class LayoutSample extends Application {
         title.setFont(Font.font("Arial", FontWeight.BOLD, 14));
         vbox.getChildren().add(title);
 
-        Hyperlink options[] = new Hyperlink[]{
+        Hyperlink[] options = new Hyperlink[]{
                 new Hyperlink("Sales"),
                 new Hyperlink("Marketing"),
                 new Hyperlink("Distribution"),
-                new Hyperlink("Costs")};
+                new Hyperlink("Costs")
+        };
 
         for (int i = 0; i < 4; i++) {
             // Add offset to left side to indent from title
@@ -112,9 +115,11 @@ public class LayoutSample extends Application {
         return vbox;
     }
 
+    //? 符号
     private void addStackPane(HBox hb) {
 
         StackPane stack = new StackPane();
+        //方框
         Rectangle helpIcon = new Rectangle(30.0, 25.0);
         helpIcon.setFill(new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
                 new Stop(0, Color.web("#4977A3")),
@@ -123,7 +128,7 @@ public class LayoutSample extends Application {
         helpIcon.setStroke(Color.web("#D0E6FA"));
         helpIcon.setArcHeight(3.5);
         helpIcon.setArcWidth(3.5);
-
+        // ?
         Text helpText = new Text("?");
         helpText.setFont(Font.font("Verdana", FontWeight.BOLD, 18));
         helpText.setFill(Color.WHITE);
@@ -227,11 +232,9 @@ public class LayoutSample extends Application {
         ImageView[] pages = new ImageView[8];
         for (int i = 0; i < 8; i++) {
             pages[i] = new ImageView(
-                    new Image(LayoutSample.class.getResourceAsStream(
-                            "graphics/chart_" + (i + 1) + ".png")));
+                    new Image(LayoutSample.class.getResourceAsStream("graphics/chart_" + (i + 1) + ".png")));
             tile.getChildren().add(pages[i]);
         }
-
         return tile;
     }
 
@@ -240,7 +243,7 @@ public class LayoutSample extends Application {
      *
      * @param grid Grid to anchor to the top of the anchor pane
      */
-    private AnchorPane addAnchorPane(GridPane grid) {
+    private AnchorPane addAnchorPane() {
 
         AnchorPane anchorpane = new AnchorPane();
 
@@ -251,12 +254,12 @@ public class LayoutSample extends Application {
         hb.setPadding(new Insets(0, 10, 10, 10));
         hb.setSpacing(10);
         hb.getChildren().addAll(buttonSave, buttonCancel);
-
-        anchorpane.getChildren().addAll(grid, hb);
+        GridPane gridPane = addGridPane();
+        anchorpane.getChildren().addAll(gridPane, hb);
         // Anchor buttons to bottom right, anchor grid to top
         AnchorPane.setBottomAnchor(hb, 8.0);
         AnchorPane.setRightAnchor(hb, 5.0);
-        AnchorPane.setTopAnchor(grid, 10.0);
+        AnchorPane.setTopAnchor(gridPane, 10.0);
 
         return anchorpane;
     }

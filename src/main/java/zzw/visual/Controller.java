@@ -1,4 +1,4 @@
-package zk;
+package zzw.visual;
 
 public class Controller {
 }
