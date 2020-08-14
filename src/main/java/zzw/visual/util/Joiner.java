@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package zzw.visual;
+package zzw.visual.util;
 
 
 import java.io.IOException;

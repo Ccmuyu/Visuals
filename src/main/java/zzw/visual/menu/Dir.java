@@ -23,7 +23,7 @@ public class Dir extends Application {
         launch(args);
     }
 
-    private TreeItem<File> createNode(final File f) {
+    public static TreeItem<File> createNode(final File f) {
         return new TreeItem<File>(f) {
             private boolean isLeaf;
             private boolean isFirstTimeChildren = true;
