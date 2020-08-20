@@ -37,21 +37,30 @@ public class ZkClient {
         return cachedPool.get(zkAddress);
     }
 
+    public void disconnect() {
+        try {
+            zooKeeper.close();
+            cachedPool.remove(zkAddress);
+        } catch (InterruptedException e) {
+            log.error("", e);
+        }
+    }
+
     private ZkClient(String zkAddress) {
         this.zkAddress = zkAddress;
         this.timeout = 30000;
         doConnect();
     }
 
-    public List<String> getChildren(String path) {
+    public List<String> getChildren(String path) throws KeeperException {
         return getChildren(path, false);
     }
 
-    public List<String> getChildren(String path, boolean watch) {
+    public List<String> getChildren(String path, boolean watch) throws KeeperException {
 
         try {
             return zooKeeper.getChildren(path, watch);
-        } catch (KeeperException | InterruptedException e) {
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
         return Collections.emptyList();
@@ -60,7 +69,7 @@ public class ZkClient {
     private void doConnect() {
         try {
             zooKeeper = new ZooKeeper(zkAddress, timeout, watchedEvent -> {
-                System.out.println("watch event:" + watchedEvent.getType()
+                log.info("watch event:" + watchedEvent.getType()
                         + ", path:" + watchedEvent.getPath() +
                         ", state:" + watchedEvent.getState());
                 log.info("init success..");
@@ -70,23 +79,4 @@ public class ZkClient {
         }
     }
 
-    public static void main(String[] args) throws IOException {
-        ZkClient client = ZkClient.newClient("mt-zookeeper-vip:2181");
-
-        while (true) {
-            System.out.println("\n");
-            System.out.println("input your path.");
-            byte[] b = new byte[1024];
-            System.in.read(b);
-            String read = new String(b);
-            read = read.replaceAll("\r\n", "").trim();
-            if (!read.startsWith("/")) {
-                System.out.println("path must start with \"/\"");
-                continue;
-            }
-            List<String> children = client.getChildren(read, true);
-            System.out.println(children);
-
-        }
-    }
 }

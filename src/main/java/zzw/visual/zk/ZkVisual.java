@@ -1,30 +1,27 @@
 package zzw.visual.zk;
 
 import javafx.application.Application;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import org.apache.zookeeper.KeeperException;
+import zzw.visual.util.ResourceLoader;
 import zzw.visual.util.ZkUtils;
 import zzw.visual.zk.client.ZkClient;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,7 +31,12 @@ import java.util.List;
  */
 public class ZkVisual extends Application {
 
-    private static String zkAddress = "mt-zookeeper-vip:2181";
+    private static String zkAddress;
+
+    static {
+        Object prop = ResourceLoader.getProp("default.zk-address");
+        zkAddress = prop.toString();
+    }
 
     @Override
     public void start(Stage primaryStage) {
@@ -62,16 +64,23 @@ public class ZkVisual extends Application {
     // center text
     private TreeView<String> treeView;
 
+    // client zookeeper proxy
+    private ZkClient client;
+
+    //路径搜索框
+    private TextField inputPath;
+
+
     private Node top() {
         HBox hBox = new HBox();
         hBox.setPadding(new Insets(15, 10, 15, 10));
         hBox.setSpacing(10);
         hBox.setStyle("-fx-background-color: #338d99;");
 
-        TextField textField = new TextField();
-        textField.setPromptText("Input your ip address, then Enter!");
-        textField.setText(zkAddress);
-        textField.setOnKeyPressed(event -> {
+        TextField inputAddress = new TextField();
+        inputAddress.setPromptText("Input your ip address, then Enter!");
+        inputAddress.setText(zkAddress);
+        inputAddress.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 System.out.println(event.getText());
                 TextField target = (TextField) event.getTarget();
@@ -80,34 +89,30 @@ public class ZkVisual extends Application {
                 target.clear();
             }
         });
-        hBox.getChildren().add(textField);
-
-
-        ObservableList<String> cursors = FXCollections.observableArrayList();
-        ChoiceBox<String> choiceBox = new ChoiceBox<>(cursors);
-        hBox.getChildren().add(choiceBox);
+        ObservableList<String> pullDownList = FXCollections.observableArrayList();
+        ChoiceBox<String> choiceBox = new ChoiceBox<>(pullDownList);
         choiceBox.getSelectionModel().selectedIndexProperty().addListener((observable, oldValue, newValue) -> {
             System.out.println(observable + "  " + oldValue + "  " + newValue);
-            textField.setText(String.valueOf(newValue));
+            inputAddress.setText(String.valueOf(newValue));
         });
         choiceBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             System.out.println(observable + "  " + oldValue + "  " + newValue);
-            textField.setText(String.valueOf(newValue));
+            inputAddress.setText(String.valueOf(newValue));
         });
 
         Button ok = new Button("Connect it!");
         ok.setDefaultButton(true);
         ok.setPrefSize(100, 20);
-        hBox.getChildren().add(ok);
         ok.setOnMouseClicked(event -> {
-            String text = textField.getText();
+            String text = inputAddress.getText();
             System.out.println(text);
             if (ZkUtils.isValidAddress(text)) {
                 zkAddress = text;
-                if (!cursors.contains(text)) {
-                    cursors.add(text);
+                if (!pullDownList.contains(text)) {
+                    pullDownList.add(text);
                 }
                 leftView.getItems().clear();
+                //左列表数据填充
                 leftView.setItems(leftData());
             } else {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION,
@@ -118,11 +123,20 @@ public class ZkVisual extends Application {
                 alert.showAndWait();
             }
         });
-
-
+        Button disconnect = new Button();
+        disconnect.setText("Disconnect");
+        disconnect.setOnMouseClicked(event -> {
+            System.out.println(event.getEventType());
+            disconnectClient();
+            clearLeftListView();
+        });
+        hBox.getChildren().addAll(inputAddress, choiceBox, ok, disconnect);
         return hBox;
     }
 
+    private void clearLeftListView() {
+        leftView.getItems().clear();
+    }
 
     private Node left() {
         VBox vbox = new VBox();
@@ -137,11 +151,7 @@ public class ZkVisual extends Application {
         hBox.getChildren().addAll(title, desc);
         hBox.alignmentProperty().setValue(Pos.CENTER);
         vbox.getChildren().add(hBox);
-/*
-        TreeItem<File> fileTreeItem = Dir.createNode(new File("e:/"));
-        TreeView treeView = new TreeView(fileTreeItem);
-        vbox.getChildren().add(treeView);
-*/
+
         ObservableList<String> objects = FXCollections.emptyObservableList();
         leftView = new ListView<>(objects);
         vbox.getChildren().addAll(leftView);
@@ -163,11 +173,9 @@ public class ZkVisual extends Application {
         return vbox;
     }
 
-    ZkClient client;
 
     private ObservableList<String> leftData() {
-        client = ZkClient.newClient(zkAddress);
-        List<String> children = client.getChildren("/", true);
+        List<String> children = getChildrenWithWarning("/");
         ObservableList<String> objects = FXCollections.observableArrayList();
         objects.addAll(children);
         return objects;
@@ -175,8 +183,7 @@ public class ZkVisual extends Application {
 
     private ObservableList<String> pathData(String path) {
         if (ZkUtils.isValidPath(path)) {
-            ZkClient client = ZkClient.newClient(zkAddress);
-            List<String> children = client.getChildren(path, true);
+            List<String> children = getChildrenWithWarning(path);
             return FXCollections.observableArrayList(children);
         }
         return FXCollections.observableArrayList("none..");
@@ -192,32 +199,28 @@ public class ZkVisual extends Application {
         hb.setPadding(new Insets(10)); // Set all sides to 10
         hb.setSpacing(8);              // Gap between nodes
 
-        hb.setPadding(new Insets(0, 10, 10, 10));
+       /* hb.setPadding(new Insets(0, 10, 10, 10));
         hb.setSpacing(10);
-        hb.getChildren().addAll(buttonSave, buttonCancel);
-//        GridPane gridPane = addGridPane();
+        hb.getChildren().addAll(buttonSave, buttonCancel);*/
 
         //中间：文本区
         Label centerLabel = new Label();
-//        centerLabel.setAlignment(Pos.CENTER);
+        centerLabel.setWrapText(true);
+        centerLabel.setFont(Font.getDefault());
+
         //中间：顶部搜索框
         HBox hBox = centerBox(centerLabel);
         VBox bigCenter = new VBox();
         bigCenter.alignmentProperty().setValue(Pos.CENTER_LEFT);
         bigCenter.getChildren().addAll(hBox, centerLabel);
         anchorpane.getChildren().addAll(bigCenter, hb);
-        // Anchor buttons to bottom right, anchor grid to top
+
         AnchorPane.setBottomAnchor(hb, 8.0);
         AnchorPane.setRightAnchor(hb, 5.0);
-//        AnchorPane.setTopAnchor(hBox,5.0);
-//        AnchorPane.setBottomAnchor(centerLabel, 1.0);
-//        AnchorPane.setTopAnchor(gridPane, 10.0);
         anchorpane.setPrefWidth(500);
         return anchorpane;
     }
 
-    //路径搜索框
-    TextField inputPath;
 
     private HBox centerBox(Label centerLabel) {
         HBox hb = new HBox();
@@ -230,83 +233,60 @@ public class ZkVisual extends Application {
         inputPath.setPromptText("full path here. like: /dubbo/xx.xx.xxxx");
 //        path.setLayoutX(150);
         inputPath.setMinWidth(350);
-        inputPath.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ENTER) {
-                TextField pathInput = (TextField) event.getTarget();
-                String text = ((TextField) event.getTarget()).getText();
-                System.out.println(text);
-                pathInput.clear();
-                ObservableList<String> pathData = pathData(text);
-                treeView.setRoot(new TreeItem<>(text));
-//                treeView
-            }
-        });
-        Button searchButton = new Button("Search !");
-        searchButton.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                String path = inputPath.getText();
-                if (ZkUtils.isValidPath(path)) {
-                    List<String> children = client.getChildren(path);
-                    centerLabel.setBackground(Background.EMPTY);
-                    centerLabel.setText(children.toString());
 
-                }
+        Button searchButton = new Button("Search !");
+        searchButton.setOnMouseClicked(event -> {
+            String path = inputPath.getText();
+            if (ZkUtils.isValidPath(path)) {
+                List<String> children = getChildrenWithWarning(path);
+                centerLabel.setBackground(Background.EMPTY);
+                centerLabel.setText(children.toString());
+                centerLabel.setWrapText(true);
             }
         });
-        hb.getChildren().addAll(notice, inputPath,searchButton);
-        hb.alignmentProperty().setValue(Pos.CENTER);
+        hb.getChildren().addAll(notice, inputPath, searchButton);
+        hb.alignmentProperty().setValue(Pos.TOP_LEFT);
         return hb;
     }
 
-    private GridPane addGridPane() {
-
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(0, 10, 0, 10));
-
-        // Category in column 2, row 1
-        Text category = new Text("Sales:");
-        category.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        grid.add(category, 1, 0);
-
-        // Title in column 3, row 1
-        Text chartTitle = new Text("Current Year");
-        chartTitle.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        grid.add(chartTitle, 2, 0);
-
-        // Subtitle in columns 2-3, row 2
-        Text chartSubtitle = new Text("Goods and Services");
-        grid.add(chartSubtitle, 1, 1, 2, 1);
-
-        // House icon in column 1, rows 1-2
-        ImageView imageHouse = new ImageView(
-                new Image("graphics/house.png"));
-        grid.add(imageHouse, 0, 0, 1, 2);
-
-        // Left label in column 1 (bottom), row 3
-        Text goodsPercent = new Text("Goods\n80%");
-        GridPane.setValignment(goodsPercent, VPos.BOTTOM);
-        grid.add(goodsPercent, 0, 2);
-
-        // Chart in columns 2-3, row 3
-        ImageView imageChart = new ImageView(
-                new Image("graphics/piechart.png"));
-        grid.add(imageChart, 1, 2, 2, 1);
-
-        // Right label in column 4 (top), row 3
-        Text servicesPercent = new Text("Services\n20%");
-        GridPane.setValignment(servicesPercent, VPos.TOP);
-        grid.add(servicesPercent, 3, 2);
-
-//        grid.setGridLinesVisible(true);
-        return grid;
-    }
 
     private Node bottom() {
-        Label label = new Label(LocalDateTime.now().toString());
-        label.setAlignment(Pos.BOTTOM_CENTER);
-        return label;
+        Label now = new Label(LocalDateTime.now().toString());
+        now.setAlignment(Pos.BOTTOM_CENTER);
+        Label author = new Label();
+        author.setText(" Authored by zzw.  ");
+        HBox box = new HBox();
+        Label empty = new Label("    ");
+        box.getChildren().addAll(now, empty, author);
+        box.setAlignment(Pos.BOTTOM_LEFT);
+        box.setPadding(new Insets(10)); // Set all sides to 10
+        box.setSpacing(8);              // Gap between nodes
+
+        return box;
     }
+
+    private List<String> getChildrenWithWarning(String path) {
+        if (client == null) {
+            client = ZkClient.newClient(zkAddress);
+        }
+        List<String> children = null;
+        try {
+            children = client.getChildren(path);
+        } catch (KeeperException e) {
+            Alert warning = new Alert(Alert.AlertType.WARNING);
+            warning.setTitle("KeeperException.");
+            warning.setContentText(e.getMessage());
+            warning.show();
+        }
+        return children == null ? Collections.emptyList() : children;
+    }
+
+
+    private void disconnectClient() {
+        client.disconnect();
+        client = null;
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, "Close success.", ButtonType.CLOSE);
+        alert.show();
+    }
+
 }
