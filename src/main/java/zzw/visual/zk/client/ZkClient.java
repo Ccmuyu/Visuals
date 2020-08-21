@@ -28,6 +28,8 @@ public class ZkClient {
     private int timeout;
 
     private static Map<String, ZkClient> cachedPool = new ConcurrentHashMap<>();
+    public static final String MAX_BUFFER_KEY = "jute.maxbuffer";
+    public static final String MAX_BUFFER_VALUE = String.valueOf((1 << 20) * 10);
 
     public static ZkClient newClient(String zkAddress) {
         ZkClient client = cachedPool.get(zkAddress);
@@ -49,8 +51,17 @@ public class ZkClient {
     private ZkClient(String zkAddress) {
         this.zkAddress = zkAddress;
         this.timeout = 30000;
+        checkZKMaxBuffer();
         doConnect();
     }
+
+    private void checkZKMaxBuffer() {
+        String bufferSize = System.getProperty(MAX_BUFFER_KEY);
+        if (bufferSize == null) {
+            System.setProperty(MAX_BUFFER_KEY, MAX_BUFFER_VALUE);
+        }
+    }
+
 
     public List<String> getChildren(String path) throws KeeperException {
         return getChildren(path, false);
