@@ -8,6 +8,7 @@ import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class Zk_CMD_Tool {
@@ -27,7 +28,8 @@ public class Zk_CMD_Tool {
     private final static int ACTION_QUIT = 0;
 
     // 默认配置信息
-    private final static String DEFAULT_HOST = "mt-zookeeper-vip";
+//    private final static String DEFAULT_HOST = "zookeeper0.dev.base.epayjd";
+    private final static String DEFAULT_HOST = "193.112.155.180";
     private final static int DEFAULT_PORT = 2181;
     private final static int DEFAULT_TIMEOUT = 30000;
 
@@ -43,6 +45,11 @@ public class Zk_CMD_Tool {
             openZk();
 
             StartMenu();
+            //TODO
+            //实现类型操作系统的，当前路径功能
+            //支持操作符：..
+            LinkedList<String> path = new LinkedList<>();
+
             while (true) {
                 String command = getCommand();
                 if (command == null || command.equals("")) {

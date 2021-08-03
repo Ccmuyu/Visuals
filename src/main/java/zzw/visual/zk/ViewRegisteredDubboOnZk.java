@@ -7,6 +7,7 @@ import org.I0Itec.zkclient.ZkClient;
 import zzw.visual.util.Joiner;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +52,11 @@ public class ViewRegisteredDubboOnZk {
 
     // 解析服务提供者地址列表为ip:port格式
     private void parseIpList(List<String> ipSet) {
+        for (String s : ipSet) {
+            String decode = URLDecoder.decode(s);
+            System.out.println(decode);
+        }
+        System.out.println("==============");
         List<URL> urlList = toURLs(CONSUMER_URL, ipSet);
         this.ipList = urlList.stream().map(URL::getAddress).collect(Collectors.toList());
     }
@@ -88,16 +94,19 @@ public class ViewRegisteredDubboOnZk {
 
     public static void main(String[] a) throws InterruptedException {
         ViewRegisteredDubboOnZk zk = new ViewRegisteredDubboOnZk();
-
-        zk.init("mt-zookeeper-vip:2181","dubbo",
-                "tf56.payOnlineFacade.facade.cashier.CashierPayFacadeService",
-                "payOnline","1.0.0");
-
+        String dev = "zookeeper0.dev.base.epayjd:2181";
+        zk.init(dev,"devjd",
+                "com.netease.epay.core.api.business.transfer.TransferBusiness",
+                "","1.0.0");
+        String targetIp = "10.177.0.232";
 //        zk.init("mt-zookeeper-vip:2181","dubbo",
 //        "tf56.hermesRuleConfig.facade.AccountFacadeService",
 //                "hermesRuleConfig_1234","1.0.0");
         try {
             System.out.println((j.join("parseIpList", JSON.json(zk.getIpList()))));
+            zk.getIpList().stream().filter(e->e.contains(targetIp)).findAny().ifPresent((ip)->{
+                System.out.println("TargetIp: " + ip);
+            });
         } catch (IOException ignored) {
 
         }
