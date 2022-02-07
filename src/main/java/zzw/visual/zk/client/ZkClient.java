@@ -20,14 +20,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ZkClient {
 
-    private static Logger log = LoggerFactory.getLogger(ZkClient.class);
+    private static final Logger log = LoggerFactory.getLogger(ZkClient.class);
     private ZooKeeper zooKeeper;
 
-    private String zkAddress;
+    private final String zkAddress;
 
-    private int timeout;
+    private final int timeout;
 
-    private static Map<String, ZkClient> cachedPool = new ConcurrentHashMap<>();
+    private static final Map<String, ZkClient> cachedPool = new ConcurrentHashMap<>();
     public static final String MAX_BUFFER_KEY = "jute.maxbuffer";
     public static final String MAX_BUFFER_VALUE = String.valueOf((1 << 20) * 10);
 
