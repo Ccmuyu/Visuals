@@ -20,7 +20,7 @@ import static com.alibaba.dubbo.common.utils.Assert.notNull;
  * @date 2020/6/11
  * 检查在zk上注册的dubbo接口
  */
-public class ViewRegisteredDubboOnZk {
+public class DubboServiceOnZk {
 
     private URL CONSUMER_URL;
 
@@ -93,15 +93,14 @@ public class ViewRegisteredDubboOnZk {
 
 
     public static void main(String[] a) throws InterruptedException {
-        ViewRegisteredDubboOnZk zk = new ViewRegisteredDubboOnZk();
+        DubboServiceOnZk zk = new DubboServiceOnZk();
         String dev = "zookeeper0.dev.base.epayjd:2181";
         zk.init(dev,"devjd",
-                "com.netease.epay.core.api.business.transfer.TransferBusiness",
+                //dubbo接口
+                "",
                 "","1.0.0");
-        String targetIp = "10.177.0.232";
-//        zk.init("mt-zookeeper-vip:2181","dubbo",
-//        "tf56.hermesRuleConfig.facade.AccountFacadeService",
-//                "hermesRuleConfig_1234","1.0.0");
+        String targetIp = "10.177.0.238";
+
         try {
             System.out.println((j.join("parseIpList", JSON.json(zk.getIpList()))));
             zk.getIpList().stream().filter(e->e.contains(targetIp)).findAny().ifPresent((ip)->{

@@ -11,14 +11,15 @@ public class Test {
 
     public static void main(String[] args) {
 
-        InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("tmp/合规库有业务库status不为0的没有的数据.csv");
+        InputStream stream = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream("tmp/合规库有业务库status不为0的没有的数据.csv");
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
         String sql = "select * from TB_BANK_ACCOUNT where (CORE_ACCOUNT_ID='" +
                 "' and BANK_ACCOUNT_INDEX ='')or()";
         StringBuilder builder = new StringBuilder("");
         builder.append("select * from TB_BANK_ACCOUNT where ");
         try {
-            String line ;
+            String line;
             while ((line = reader.readLine()) != null) {
 //                System.out.println(line);
                 String[] split = line.split(",");
