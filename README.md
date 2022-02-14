@@ -8,7 +8,7 @@ java -jar zk_visual.jar
 tips: 默认你已经有了java运行环境
 
 
-![pic](/doc/demo.png)
+![pic](doc/demo.png)
 
 - 输入zookeeper地址  
 - 点击connect即可连接  

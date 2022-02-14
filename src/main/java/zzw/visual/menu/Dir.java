@@ -11,6 +11,8 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author zhenwei.wang
@@ -75,11 +77,22 @@ public class Dir extends Application {
     public void start(Stage stage) {
         Scene scene = new Scene(new Group(), 300, 600);
         VBox vbox = new VBox();
-        TreeItem<File> root = createNode(new File("c:/"));
+        Properties properties = System.getProperties();
+        System.out.println(properties);
+        TreeItem<File> root = createNode(new File(getRootPath()));
         TreeView treeView = new TreeView<File>(root);
         vbox.getChildren().add(treeView);
         ((Group) scene.getRoot()).getChildren().add(vbox);
         stage.setScene(scene);
         stage.show();
+    }
+
+    private String getRootPath() {
+        String property = System.getProperty("os.name");
+        if (property.startsWith("Mac")) {
+            return "/";
+        } else {
+            return "C:/";
+        }
     }
 }
